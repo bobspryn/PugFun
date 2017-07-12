@@ -15,12 +15,13 @@ class PugCollectionViewCell: UICollectionViewCell {
         self.imageView = UIImageView()
         super.init(frame: frame)
         self.contentView.addSubview(self.imageView)
-        self.imageView.leadingAnchor.constraint(equalTo: self.contentView.leadingAnchor)
-        self.imageView.topAnchor.constraint(equalTo: self.contentView.topAnchor)
-        self.imageView.bottomAnchor.constraint(equalTo: self.contentView.bottomAnchor)
-        self.imageView.trailingAnchor.constraint(equalTo: self.contentView.trailingAnchor)
+        self.imageView.translatesAutoresizingMaskIntoConstraints = false
         self.imageView.backgroundColor = UIColor.purple
         self.backgroundColor = UIColor.green
+        self.imageView.leadingAnchor.constraint(equalTo: self.contentView.leadingAnchor).isActive = true
+        self.imageView.topAnchor.constraint(equalTo: self.contentView.topAnchor).isActive = true
+        self.imageView.bottomAnchor.constraint(equalTo: self.contentView.bottomAnchor).isActive = true
+        self.imageView.trailingAnchor.constraint(equalTo: self.contentView.trailingAnchor).isActive = true
     }
 
     required init?(coder aDecoder: NSCoder) {
@@ -30,4 +31,5 @@ class PugCollectionViewCell: UICollectionViewCell {
     override func prepareForReuse() {
         self.imageView.image = nil
     }
+
 }

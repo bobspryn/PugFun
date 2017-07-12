@@ -21,12 +21,7 @@ private struct PugRequest: Codable {
 // Methods on the context should basically be treated as "actions" and not return anything. All changes
 // flow down from the top. undirectional in design
 class PugContext: NSObject {
-    var pugs: [Pug] = [] {
-        didSet {
-            let changes = Changeset.edits(from: oldValue, to: pugs)
-            self.changesetSubject.onNext(changes)
-        }
-    }
+    var pugs: [Pug] = []
     private let changesetSubject = PublishSubject<[Edit<Pug>]>()
     lazy var changesets: Observable<[Edit<Pug>]> = {
         self.changesetSubject.asObservable()
@@ -47,6 +42,9 @@ class PugContext: NSObject {
     init(api: PugAPI = DefaultPugAPI()) {
         self.api = api
         super.init()
+
+
+
         self.imageRequests
             .switchLatest()
             .map{ jsonData -> [Pug] in
@@ -60,17 +58,25 @@ class PugContext: NSObject {
                     return Pug(url: fixedURL, image: nil)
                 })
             }
-            .debug()
+//            .debug()
+            .observeOn(self.backgroundScheduler)
             .subscribe(onNext: { pugs in
+                let oldPugs = self.pugs
                 self.pugs.append(contentsOf: pugs)
+                let changes = Changeset.edits(from: oldPugs, to: self.pugs)
+                self.changesetSubject.onNext(changes)
             })
             .addDisposableTo(self.disposables)
 
         let downloads = self.downloadRequests
             .observeOn(self.backgroundScheduler)
+//            .debug()
             .flatMap { values -> Observable<(Pug, UIImage)> in
                 let (pug, request) = values
                 return request
+                    .catchError({ (error) -> Observable<Data> in
+                        return Observable.empty()
+                    })
                     .map { data in
                         guard let image = UIImage(data: data) else {
                             // some error
@@ -81,14 +87,16 @@ class PugContext: NSObject {
             }
 
         downloads
-            .observeOn(MainScheduler.instance)
             .subscribe(onNext: { values in
                 let (oldPug, image) = values
                 let pug = Pug(url: oldPug.url, image: image)
                 guard let index = self.pugs.index(of: oldPug) else {
                     return
                 }
+                let oldPugs = self.pugs
                 self.pugs[index] = pug
+                let changes = Changeset.edits(from: oldPugs, to: self.pugs)
+                self.changesetSubject.onNext(changes)
             }).addDisposableTo(self.disposables)
     }
 
