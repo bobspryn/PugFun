@@ -1,0 +1,19 @@
+PODS:
+  - Changeset (2.1.2)
+  - RxCocoa (3.5.0):
+    - RxSwift (~> 3.4)
+  - RxSwift (3.5.0)
+
+DEPENDENCIES:
+  - Changeset
+  - RxCocoa (~> 3.0)
+  - RxSwift (~> 3.4)
+
+SPEC CHECKSUMS:
+  Changeset: 58ffd3e157651f8aba3964bf723d4ed649d2071b
+  RxCocoa: a0a09f45d0e5b48ecb6a4a7b4b4c89c88d3f633f
+  RxSwift: 18ee9d78b45edb3b0b7e79916b47a116e6dbc842
+
+PODFILE CHECKSUM: 4394e2230a155bf084a61968acb4c430506c233d
+
+COCOAPODS: 1.2.1
