@@ -45,7 +45,7 @@ class PugContext: NSObject {
 
 
 
-        self.imageRequests
+        let fetches = self.imageRequests
             .switchLatest()
             .map{ jsonData -> [Pug] in
                 let decoder = JSONDecoder()
@@ -60,13 +60,11 @@ class PugContext: NSObject {
             }
 //            .debug()
             .observeOn(self.backgroundScheduler)
-            .subscribe(onNext: { pugs in
-                let oldPugs = self.pugs
-                self.pugs.append(contentsOf: pugs)
-                let changes = Changeset.edits(from: oldPugs, to: self.pugs)
-                self.changesetSubject.onNext(changes)
-            })
-            .addDisposableTo(self.disposables)
+            .map { pugs -> [Pug] in
+                var oldPugs = self.pugs
+                oldPugs.append(contentsOf: pugs)
+                return oldPugs
+            }
 
         let downloads = self.downloadRequests
             .observeOn(self.backgroundScheduler)
@@ -85,17 +83,21 @@ class PugContext: NSObject {
                         return (pug, image.forceLazyImageDecompression())
                     }
             }
-
-        downloads
-            .subscribe(onNext: { values in
+            .flatMap { values -> Observable<[Pug]> in
                 let (oldPug, image) = values
                 let pug = Pug(url: oldPug.url, image: image)
                 guard let index = self.pugs.index(of: oldPug) else {
-                    return
+                    return Observable.empty()
                 }
-                let oldPugs = self.pugs
-                self.pugs[index] = pug
-                let changes = Changeset.edits(from: oldPugs, to: self.pugs)
+                var oldPugs = self.pugs
+                oldPugs[index] = pug
+                return Observable.just(oldPugs)
+            }
+
+        Observable.merge([fetches, downloads])
+            .subscribe(onNext: { newPugs in
+                let changes = Changeset.edits(from: self.pugs, to: newPugs)
+                self.pugs = newPugs
                 self.changesetSubject.onNext(changes)
             }).addDisposableTo(self.disposables)
     }
